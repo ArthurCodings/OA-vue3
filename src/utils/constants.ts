@@ -18,6 +18,9 @@ export const UserTypeEnum = {
 }
 
 // ========== SYSTEM 模块 ==========
+/** 超级管理员用户 ID，该用户不允许被修改、删除、重置密码等操作 */
+export const SUPER_ADMIN_USER_ID = 1
+
 /**
  * 菜单的类型枚举
  */

@@ -105,7 +105,11 @@
       </ContentWrap>
       <ContentWrap>
         <el-table v-loading="loading" :data="list" @selection-change="handleRowCheckboxChange">
-          <el-table-column type="selection" width="55" />
+          <el-table-column
+            type="selection"
+            width="55"
+            :selectable="(row) => row.id !== SUPER_ADMIN_USER_ID"
+          />
           <el-table-column label="用户编号" align="center" key="id" prop="id" />
           <el-table-column
             label="用户名称"
@@ -134,7 +138,7 @@
                 :active-value="0"
                 :inactive-value="1"
                 @change="handleStatusChange(scope.row)"
-                :disabled="!checkPermi(['system:user:update'])"
+                :disabled="scope.row.id === SUPER_ADMIN_USER_ID || !checkPermi(['system:user:update'])"
               />
             </template>
           </el-table-column>
@@ -149,6 +153,7 @@
             <template #default="scope">
               <div class="flex items-center justify-center">
                 <el-button
+                  v-if="scope.row.id !== SUPER_ADMIN_USER_ID"
                   type="primary"
                   link
                   @click="openForm('update', scope.row.id)"
@@ -157,6 +162,7 @@
                   <Icon icon="ep:edit" />修改
                 </el-button>
                 <el-dropdown
+                  v-if="scope.row.id !== SUPER_ADMIN_USER_ID"
                   @command="(command) => handleCommand(command, scope.row)"
                   v-hasPermi="[
                     'system:user:delete',
@@ -214,7 +220,7 @@ import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { checkPermi } from '@/utils/permission'
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
-import { CommonStatusEnum } from '@/utils/constants'
+import { CommonStatusEnum, SUPER_ADMIN_USER_ID } from '@/utils/constants'
 import * as UserApi from '@/api/system/user'
 import UserForm from './UserForm.vue'
 import UserImportForm from './UserImportForm.vue'
@@ -278,6 +284,10 @@ const handleDeptNodeClick = async (row: any) => {
 /** 添加/修改操作 */
 const formRef = ref()
 const openForm = (type: string, id?: number) => {
+  if (type === 'update' && id === SUPER_ADMIN_USER_ID) {
+    message.warning('超级管理员不允许修改')
+    return
+  }
   formRef.value.open(type, id)
 }
 
@@ -289,6 +299,12 @@ const handleImport = () => {
 
 /** 修改用户状态 */
 const handleStatusChange = async (row: UserApi.UserVO) => {
+  if (row.id === SUPER_ADMIN_USER_ID) {
+    message.warning('超级管理员不允许修改状态')
+    row.status =
+      row.status === CommonStatusEnum.ENABLE ? CommonStatusEnum.DISABLE : CommonStatusEnum.ENABLE
+    return
+  }
   try {
     // 修改状态的二次确认
     const text = row.status === CommonStatusEnum.ENABLE ? '启用' : '停用'
@@ -339,6 +355,10 @@ const handleCommand = (command: string, row: UserApi.UserVO) => {
 
 /** 删除按钮操作 */
 const handleDelete = async (id: number) => {
+  if (id === SUPER_ADMIN_USER_ID) {
+    message.warning('超级管理员不允许删除')
+    return
+  }
   try {
     // 删除的二次确认
     await message.delConfirm()
@@ -357,11 +377,19 @@ const handleRowCheckboxChange = (rows: UserApi.UserVO[]) => {
 }
 
 const handleDeleteBatch = async () => {
+  const idsToDelete = checkedIds.value.filter((id) => id !== SUPER_ADMIN_USER_ID)
+  if (idsToDelete.length === 0) {
+    message.warning('超级管理员不允许删除')
+    return
+  }
+  if (idsToDelete.length < checkedIds.value.length) {
+    message.warning('已排除超级管理员，仅删除其他选中用户')
+  }
   try {
     // 删除的二次确认
     await message.delConfirm()
     // 发起批量删除
-    await UserApi.deleteUserList(checkedIds.value)
+    await UserApi.deleteUserList(idsToDelete)
     checkedIds.value = []
     message.success(t('common.delSuccess'))
     // 刷新列表
@@ -371,6 +399,10 @@ const handleDeleteBatch = async () => {
 
 /** 重置密码 */
 const handleResetPwd = async (row: UserApi.UserVO) => {
+  if (row.id === SUPER_ADMIN_USER_ID) {
+    message.warning('超级管理员不允许重置密码')
+    return
+  }
   try {
     // 重置的二次确认
     const result = await message.prompt(
@@ -387,6 +419,10 @@ const handleResetPwd = async (row: UserApi.UserVO) => {
 /** 分配角色 */
 const assignRoleFormRef = ref()
 const handleRole = (row: UserApi.UserVO) => {
+  if (row.id === SUPER_ADMIN_USER_ID) {
+    message.warning('超级管理员不允许修改角色')
+    return
+  }
   assignRoleFormRef.value.open(row)
 }
 

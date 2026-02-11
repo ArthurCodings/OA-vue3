@@ -97,7 +97,7 @@
 </template>
 <script lang="ts" setup>
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
-import { CommonStatusEnum } from '@/utils/constants'
+import { CommonStatusEnum, SUPER_ADMIN_USER_ID } from '@/utils/constants'
 import { defaultProps, handleTree } from '@/utils/tree'
 import * as PostApi from '@/api/system/post'
 import * as DeptApi from '@/api/system/dept'
@@ -152,6 +152,10 @@ const postList = ref([] as PostApi.PostVO[]) // 岗位列表
 
 /** 打开弹窗 */
 const open = async (type: string, id?: number) => {
+  if (type === 'update' && id === SUPER_ADMIN_USER_ID) {
+    message.warning('超级管理员不允许修改')
+    return
+  }
   dialogVisible.value = true
   dialogTitle.value = t('action.' + type)
   formType.value = type
@@ -175,6 +179,10 @@ defineExpose({ open }) // 提供 open 方法，用于打开弹窗
 /** 提交表单 */
 const emit = defineEmits(['success']) // 定义 success 事件，用于操作成功后的回调
 const submitForm = async () => {
+  if (formData.value.id === SUPER_ADMIN_USER_ID) {
+    message.warning('超级管理员不允许修改')
+    return
+  }
   // 校验表单
   if (!formRef) return
   const valid = await formRef.value.validate()

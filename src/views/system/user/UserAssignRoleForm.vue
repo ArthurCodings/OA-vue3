@@ -20,6 +20,7 @@
   </Dialog>
 </template>
 <script lang="ts" setup>
+import { SUPER_ADMIN_USER_ID } from '@/utils/constants'
 import * as PermissionApi from '@/api/system/permission'
 import * as UserApi from '@/api/system/user'
 import * as RoleApi from '@/api/system/role'
@@ -42,6 +43,10 @@ const roleList = ref([] as RoleApi.RoleVO[]) // 角色的列表
 
 /** 打开弹窗 */
 const open = async (row: UserApi.UserVO) => {
+  if (row.id === SUPER_ADMIN_USER_ID) {
+    message.warning('超级管理员不允许修改角色')
+    return
+  }
   dialogVisible.value = true
   resetForm()
   // 设置数据
@@ -63,6 +68,10 @@ defineExpose({ open }) // 提供 open 方法，用于打开弹窗
 /** 提交表单 */
 const emit = defineEmits(['success']) // 定义 success 事件，用于操作成功后的回调
 const submitForm = async () => {
+  if (formData.value.id === SUPER_ADMIN_USER_ID) {
+    message.warning('超级管理员不允许修改角色')
+    return
+  }
   // 校验表单
   if (!formRef) return
   const valid = await formRef.value.validate()

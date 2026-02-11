@@ -7,6 +7,25 @@ import { CACHE_KEY, useCache } from '@/hooks/web/useCache'
 
 const { wsCache } = useCache()
 
+// 需要从侧边栏导航中排除的菜单项（name 或 title）
+const EXCLUDED_MENU_NAMES = ['作者动态', 'Boot 开发文档', 'Cloud 开发文档']
+
+/** 递归过滤掉指定的菜单项 */
+function filterExcludedMenus(menus: AppCustomRouteRecordRaw[]): AppCustomRouteRecordRaw[] {
+  return menus
+    .filter((item) => {
+      const name = (item as any).name || (item as any).title || ''
+      return !EXCLUDED_MENU_NAMES.includes(name)
+    })
+    .map((item) => {
+      const result = { ...item }
+      if (result.children && result.children.length > 0) {
+        result.children = filterExcludedMenus(result.children as AppCustomRouteRecordRaw[])
+      }
+      return result
+    })
+}
+
 export interface PermissionState {
   routers: AppRouteRecordRaw[]
   addRouters: AppRouteRecordRaw[]
@@ -37,7 +56,7 @@ export const usePermissionStore = defineStore('permission', {
         let res: AppCustomRouteRecordRaw[] = []
         const roleRouters = wsCache.get(CACHE_KEY.ROLE_ROUTERS)
         if (roleRouters) {
-          res = roleRouters as AppCustomRouteRecordRaw[]
+          res = filterExcludedMenus(roleRouters as AppCustomRouteRecordRaw[])
         }
         const routerMap: AppRouteRecordRaw[] = generateRoute(res)
         // 动态路由，404一定要放到最后面
