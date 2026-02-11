@@ -1,5 +1,6 @@
 <template>
   <div>
+    <!-- 模块一：欢迎语 + 个人工作概览 -->
     <el-card shadow="never">
       <el-skeleton :loading="loading" animated>
         <el-row :gutter="16" justify="space-between">
@@ -12,8 +13,18 @@
                 <div class="text-20px">
                   {{ t('workplace.welcome') }} {{ username }} {{ t('workplace.happyDay') }}
                 </div>
-                <div class="mt-10px text-14px text-gray-500">
-                  {{ t('workplace.toady') }}，20℃ - 32℃！
+                <div class="mt-10px text-14px text-gray-500 space-y-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-mono text-16px">{{ currentTime }}</span>
+                    <span>{{ weekDay }}</span>
+                  </div>
+                  <div class="text-12px text-gray-400">
+                    {{ solarDate }}
+                    <span v-if="lunarDate"> · {{ lunarDate }}</span>
+                  </div>
+                  <div v-if="weather" class="text-12px text-gray-400">
+                    无锡 {{ weather.text }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -21,31 +32,31 @@
           <el-col :xl="12" :lg="12" :md="12" :sm="24" :xs="24">
             <div class="h-70px flex items-center justify-end lt-sm:mt-10px">
               <div class="px-8px text-right">
-                <div class="mb-16px text-14px text-gray-400">{{ t('workplace.project') }}</div>
+                <div class="mb-16px text-14px text-gray-400">待办任务</div>
                 <CountTo
                   class="text-20px"
                   :start-val="0"
-                  :end-val="totalSate.project"
+                  :end-val="totalState.todo"
                   :duration="2600"
                 />
               </div>
               <el-divider direction="vertical" />
               <div class="px-8px text-right">
-                <div class="mb-16px text-14px text-gray-400">{{ t('workplace.toDo') }}</div>
+                <div class="mb-16px text-14px text-gray-400">已办任务</div>
                 <CountTo
                   class="text-20px"
                   :start-val="0"
-                  :end-val="totalSate.todo"
+                  :end-val="totalState.done"
                   :duration="2600"
                 />
               </div>
               <el-divider direction="vertical" border-style="dashed" />
               <div class="px-8px text-right">
-                <div class="mb-16px text-14px text-gray-400">{{ t('workplace.access') }}</div>
+                <div class="mb-16px text-14px text-gray-400">进行中流程</div>
                 <CountTo
                   class="text-20px"
                   :start-val="0"
-                  :end-val="totalSate.access"
+                  :end-val="totalState.running"
                   :duration="2600"
                 />
               </div>
@@ -54,369 +65,355 @@
         </el-row>
       </el-skeleton>
     </el-card>
-  </div>
 
-  <el-row class="mt-8px" :gutter="8" justify="space-between">
-    <el-col :xl="16" :lg="16" :md="24" :sm="24" :xs="24" class="mb-8px">
-      <el-card shadow="never">
-        <template #header>
-          <div class="h-3 flex justify-between">
-            <span>{{ t('workplace.project') }}</span>
-            <el-link
-              type="primary"
-              :underline="false"
-              href="https://github.com/yudaocode"
-              target="_blank"
-            >
-              {{ t('action.more') }}
-            </el-link>
-          </div>
-        </template>
-        <el-skeleton :loading="loading" animated>
-          <el-row>
-            <el-col
-              v-for="(item, index) in projects"
-              :key="`card-${index}`"
-              :xl="8"
-              :lg="8"
-              :md="8"
-              :sm="24"
-              :xs="24"
-            >
-              <el-card
-                shadow="hover"
-                class="mr-5px mt-5px cursor-pointer"
-                @click="handleProjectClick(item.message)"
-              >
-                <div class="flex items-center">
-                  <Icon
-                    :icon="item.icon"
-                    :size="25"
-                    class="mr-8px"
-                    :style="{ color: item.color }"
-                  />
-                  <span class="text-16px">{{ item.name }}</span>
-                </div>
-                <div class="mt-12px text-12px text-gray-400">{{ t(item.message) }}</div>
-                <div class="mt-12px flex justify-between text-12px text-gray-400">
-                  <span>{{ item.personal }}</span>
-                  <span>{{ formatTime(item.time, 'yyyy-MM-dd') }}</span>
-                </div>
-              </el-card>
-            </el-col>
-          </el-row>
-        </el-skeleton>
-      </el-card>
-
-      <el-card shadow="never" class="mt-8px">
-        <el-skeleton :loading="loading" animated>
-          <el-row :gutter="20" justify="space-between">
-            <el-col :xl="10" :lg="10" :md="24" :sm="24" :xs="24">
-              <el-card shadow="hover" class="mb-8px">
-                <el-skeleton :loading="loading" animated>
-                  <Echart :options="pieOptionsData" :height="280" />
-                </el-skeleton>
-              </el-card>
-            </el-col>
-            <el-col :xl="14" :lg="14" :md="24" :sm="24" :xs="24">
-              <el-card shadow="hover" class="mb-8px">
-                <el-skeleton :loading="loading" animated>
-                  <Echart :options="barOptionsData" :height="280" />
-                </el-skeleton>
-              </el-card>
-            </el-col>
-          </el-row>
-        </el-skeleton>
-      </el-card>
-    </el-col>
-    <el-col :xl="8" :lg="8" :md="24" :sm="24" :xs="24" class="mb-8px">
-      <el-card shadow="never">
-        <template #header>
-          <div class="h-3 flex justify-between">
-            <span>{{ t('workplace.shortcutOperation') }}</span>
-          </div>
-        </template>
-        <el-skeleton :loading="loading" animated>
-          <el-row>
-            <el-col v-for="item in shortcut" :key="`team-${item.name}`" :span="8" class="mb-8px">
-              <div class="flex items-center">
-                <Icon :icon="item.icon" class="mr-8px" :style="{ color: item.color }" />
-                <el-link type="default" :underline="false" @click="handleShortcutClick(item.url)">
-                  {{ item.name }}
-                </el-link>
-              </div>
-            </el-col>
-          </el-row>
-        </el-skeleton>
-      </el-card>
-      <el-card shadow="never" class="mt-8px">
-        <template #header>
-          <div class="h-3 flex justify-between">
-            <span>{{ t('workplace.notice') }}</span>
-            <el-link type="primary" :underline="false">{{ t('action.more') }}</el-link>
-          </div>
-        </template>
-        <el-skeleton :loading="loading" animated>
-          <div v-for="(item, index) in notice" :key="`dynamics-${index}`">
-            <div class="flex items-center">
-              <el-avatar :src="avatar" :size="35" class="mr-16px">
-                <img src="@/assets/imgs/avatar.gif" alt="" />
-              </el-avatar>
-              <div>
-                <div class="text-14px">
-                  <Highlight :keys="item.keys.map((v) => t(v))">
-                    {{ item.type }} : {{ item.title }}
-                  </Highlight>
-                </div>
-                <div class="mt-16px text-12px text-gray-400">
-                  {{ formatTime(item.date, 'yyyy-MM-dd') }}
-                </div>
-              </div>
+    <el-row class="mt-8px" :gutter="8" justify="space-between">
+      <!-- 左列：待办 + 快捷入口 + 统计图 -->
+      <el-col :xl="16" :lg="16" :md="24" :sm="24" :xs="24" class="mb-8px">
+        <!-- 模块二：我的待办 -->
+        <el-card shadow="never">
+          <template #header>
+            <div class="h-3 flex justify-between">
+              <span>我的待办</span>
+              <el-link type="primary" :underline="false" @click="goToTodo">
+                {{ t('action.more') }}
+              </el-link>
             </div>
-            <el-divider />
-          </div>
-        </el-skeleton>
-      </el-card>
-    </el-col>
-  </el-row>
+          </template>
+          <el-skeleton :loading="loading" animated>
+            <div v-if="todoList.length === 0" class="py-8 text-center text-gray-400">
+              暂无待办任务
+            </div>
+            <ul v-else>
+              <li
+                v-for="item in todoList"
+                :key="item.id"
+                class="flex items-center justify-between py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded px-2"
+                @click="handleTodoClick(item)"
+              >
+                <div class="flex-1 min-w-0">
+                  <div class="text-14px truncate">{{ item.processInstance?.name || item.name }}</div>
+                  <div class="mt-1 text-12px text-gray-400">
+                    {{ item.processInstance?.startUser?.nickname || '-' }} ·
+                    {{ formatTime(item.createTime, 'yyyy-MM-dd HH:mm') }}
+                  </div>
+                </div>
+                <el-tag size="small" type="info">{{ item.name }}</el-tag>
+              </li>
+            </ul>
+          </el-skeleton>
+        </el-card>
+
+        <!-- 快捷入口 -->
+        <el-card shadow="never" class="mt-8px">
+          <template #header>
+            <div class="h-3 flex justify-between">
+              <span>{{ t('workplace.shortcutOperation') }}</span>
+            </div>
+          </template>
+          <el-skeleton :loading="loading" animated>
+            <el-row :gutter="12">
+              <el-col
+                v-for="item in shortcutList"
+                :key="item.name"
+                :xs="12"
+                :sm="8"
+                :md="6"
+                :lg="6"
+                :xl="4"
+                class="mb-8px"
+              >
+                <div
+                  class="flex items-center gap-2 p-3 rounded cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
+                  @click="handleShortcutClick(item)"
+                >
+                  <Icon :icon="item.icon" :size="22" :style="{ color: item.color }" />
+                  <span class="text-14px">{{ item.name }}</span>
+                </div>
+              </el-col>
+            </el-row>
+          </el-skeleton>
+        </el-card>
+
+        <!-- 模块三：个人统计（简化） -->
+        <el-card shadow="never" class="mt-8px">
+          <template #header>
+            <span>流程办理统计</span>
+          </template>
+          <el-skeleton :loading="loading" animated>
+            <Echart :options="processChartOptions" :height="240" />
+          </el-skeleton>
+        </el-card>
+      </el-col>
+
+      <!-- 右列：公告 + 常用文档 -->
+      <el-col :xl="8" :lg="8" :md="24" :sm="24" :xs="24" class="mb-8px">
+        <!-- 模块四：最新公告 -->
+        <el-card shadow="never">
+          <template #header>
+            <div class="h-3 flex justify-between">
+              <span>{{ t('workplace.notice') }}</span>
+              <el-link type="primary" :underline="false" @click="goToNotice">
+                {{ t('action.more') }}
+              </el-link>
+            </div>
+          </template>
+          <el-skeleton :loading="loading" animated>
+            <div v-if="noticeList.length === 0" class="py-8 text-center text-gray-400">
+              暂无公告
+            </div>
+            <ul v-else>
+              <li
+                v-for="item in noticeList"
+                :key="item.id"
+                class="flex items-start py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded px-2"
+                @click="handleNoticeClick"
+              >
+                <div class="flex-1 min-w-0">
+                  <div class="text-14px truncate">{{ item.title }}</div>
+                  <div class="mt-1 text-12px text-gray-400 flex items-center gap-2">
+                    <dict-tag :type="DICT_TYPE.SYSTEM_NOTICE_TYPE" :value="item.type" size="small" />
+                    {{ formatTime(item.createTime, 'yyyy-MM-dd') }}
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </el-skeleton>
+        </el-card>
+
+        <!-- 常用文档/制度（占位，可配置） -->
+        <el-card shadow="never" class="mt-8px">
+          <template #header>
+            <span>常用文档</span>
+          </template>
+          <el-skeleton :loading="loading" animated>
+            <div class="text-14px text-gray-500">
+              <p class="mb-2">· 请假制度</p>
+              <p class="mb-2">· 报销制度</p>
+              <p class="mb-0">· 考勤管理办法</p>
+              <p class="mt-4 text-12px text-gray-400">
+                以上为示例，可在系统中配置实际文档链接
+              </p>
+            </div>
+          </el-skeleton>
+        </el-card>
+      </el-col>
+    </el-row>
+  </div>
 </template>
 <script lang="ts" setup>
 import { set } from 'lodash-es'
 import { EChartsOption } from 'echarts'
 import { formatTime } from '@/utils'
-
 import { useUserStore } from '@/store/modules/user'
-// import { useWatermark } from '@/hooks/web/useWatermark'
-import type { WorkplaceTotal, Project, Notice, Shortcut } from './types'
-import { pieOptions, barOptions } from './echarts-data'
+import { DICT_TYPE } from '@/utils/dict'
+import { checkPermi } from '@/utils/permission'
 import { useRouter } from 'vue-router'
+import * as TaskApi from '@/api/bpm/task'
+import * as ProcessInstanceApi from '@/api/bpm/processInstance'
+import * as NoticeApi from '@/api/system/notice'
+import { useDateTime } from './useDateTime'
+import { getWuxiWeather } from '@/api/infra/weather'
 
 defineOptions({ name: 'Index' })
 
 const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
-// const { setWatermark } = useWatermark()
 const loading = ref(true)
 const avatar = userStore.getUser.avatar
 const username = userStore.getUser.nickname
-const pieOptionsData = reactive<EChartsOption>(pieOptions) as EChartsOption
-// 获取统计数
-let totalSate = reactive<WorkplaceTotal>({
-  project: 0,
-  access: 0,
-  todo: 0
+
+// 实时日期时间（无锡滨湖区）
+const { currentTime, weekDay, solarDate, lunarDate } = useDateTime()
+const weather = ref<{ temp: string; desc: string; text: string } | null>(null)
+getWuxiWeather().then((w) => {
+  weather.value = w
 })
 
-const getCount = async () => {
-  const data = {
-    project: 40,
-    access: 2340,
-    todo: 10
+// 模块一：统计数
+const totalState = reactive({
+  todo: 0,
+  done: 0,
+  running: 0
+})
+
+// 模块二：待办列表
+const todoList = ref<any[]>([])
+const TODO_PAGE_SIZE = 5
+
+// 模块四：公告列表
+const noticeList = ref<any[]>([])
+const NOTICE_PAGE_SIZE = 5
+
+// 快捷入口（根据权限过滤）
+const shortcutList = computed(() => {
+  const all: { name: string; icon: string; url: string; color: string; perm?: string[] }[] = [
+    { name: '发起流程', icon: 'ep:plus', url: '/bpm/process-instance/create', color: '#409EFF' },
+    { name: 'OA 请假', icon: 'ep:calendar', url: '/bpm/oa/leave', color: '#67C23A' },
+    { name: '待办任务', icon: 'ep:clock', url: '/bpm/task/todo', color: '#E6A23C' },
+    { name: '已办任务', icon: 'ep:circle-check', url: '/bpm/task/done', color: '#909399' },
+    { name: '抄送我的', icon: 'ep:document-copy', url: '/bpm/process-instance/copy', color: '#909399' },
+    { name: '我的流程', icon: 'ep:list', url: '/bpm/process-instance/my', color: '#409EFF' },
+    {
+      name: '用户管理',
+      icon: 'ep:user',
+      url: '/system/user',
+      color: '#1fdaca',
+      perm: ['system:user:query']
+    },
+    {
+      name: '部门管理',
+      icon: 'ep:office-building',
+      url: '/system/dept',
+      color: '#3fb27f',
+      perm: ['system:dept:query']
+    },
+    {
+      name: '公告管理',
+      icon: 'ep:bell',
+      url: '/system/notice',
+      color: '#ff6b6b',
+      perm: ['system:notice:query']
+    }
+  ]
+  return all.filter((item) => {
+    if (!item.perm) return true
+    return checkPermi(item.perm)
+  })
+})
+
+// 流程办理统计图（近7天，使用已办数据或 mock）
+const processChartOptions = reactive<EChartsOption>({
+  tooltip: { trigger: 'axis' },
+  grid: { left: 50, right: 20, bottom: 30, top: 20 },
+  xAxis: {
+    type: 'category',
+    data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+    axisTick: { alignWithLabel: true }
+  },
+  yAxis: { type: 'value', name: '数量' },
+  series: [
+    { name: '已办任务', type: 'bar', data: [0, 0, 0, 0, 0, 0, 0], itemStyle: { color: '#67C23A' } }
+  ]
+})
+
+/** 获取待办、已办、进行中数量 */
+const fetchCounts = async () => {
+  try {
+    const [todoRes, doneRes, runningRes] = await Promise.all([
+      TaskApi.getTaskTodoPage({ pageNo: 1, pageSize: 1 }),
+      TaskApi.getTaskDonePage({ pageNo: 1, pageSize: 1 }),
+      ProcessInstanceApi.getProcessInstanceMyPage({ pageNo: 1, pageSize: 1, status: 1 })
+    ])
+    totalState.todo = todoRes.total ?? 0
+    totalState.done = doneRes.total ?? 0
+    totalState.running = runningRes.total ?? 0
+  } catch {
+    totalState.todo = 0
+    totalState.done = 0
+    totalState.running = 0
   }
-  totalSate = Object.assign(totalSate, data)
 }
 
-// 获取项目数
-let projects = reactive<Project[]>([])
-const getProject = async () => {
-  const data = [
-    {
-      name: 'ruoyi-vue-pro',
-      icon: 'simple-icons:springboot',
-      message: 'github.com/YunaiV/ruoyi-vue-pro',
-      personal: 'Spring Boot 单体架构',
-      time: new Date('2025-01-02'),
-      color: '#6DB33F'
-    },
-    {
-      name: 'yudao-ui-admin-vue3',
-      icon: 'ep:element-plus',
-      message: 'github.com/yudaocode/yudao-ui-admin-vue3',
-      personal: 'Vue3 + element-plus 管理后台',
-      time: new Date('2025-02-03'),
-      color: '#409EFF'
-    },
-    {
-      name: 'yudao-ui-mall-uniapp',
-      icon: 'icon-park-outline:mall-bag',
-      message: 'github.com/yudaocode/yudao-ui-mall-uniapp',
-      personal: 'Vue3 + uniapp 商城手机端',
-      time: new Date('2025-03-04'),
-      color: '#ff4d4f'
-    },
-    {
-      name: 'yudao-cloud',
-      icon: 'material-symbols:cloud-outline',
-      message: 'github.com/YunaiV/yudao-cloud',
-      personal: 'Spring Cloud 微服务架构',
-      time: new Date('2025-04-05'),
-      color: '#1890ff'
-    },
-    {
-      name: 'yudao-ui-admin-vben',
-      icon: 'devicon:antdesign',
-      message: 'github.com/yudaocode/yudao-ui-admin-vben',
-      personal: 'Vue3 + vben5(antd) 管理后台',
-      time: new Date('2025-05-06'),
-      color: '#e18525'
-    },
-    {
-      name: 'yudao-ui-admin-uniapp',
-      icon: 'ant-design:mobile',
-      message: 'github.com/yudaocode/yudao-ui-admin-uniapp',
-      personal: 'Vue3 + uniapp 管理手机端',
-      time: new Date('2025-06-01'),
-      color: '#2979ff'
-    }
-  ]
-  projects = Object.assign(projects, data)
+/** 获取待办列表 */
+const fetchTodoList = async () => {
+  try {
+    const res = await TaskApi.getTaskTodoPage({
+      pageNo: 1,
+      pageSize: TODO_PAGE_SIZE
+    })
+    todoList.value = res.list ?? []
+  } catch {
+    todoList.value = []
+  }
 }
 
-// 获取通知公告
-let notice = reactive<Notice[]>([])
-const getNotice = async () => {
-  const data = [
-    {
-      title: '系统支持 JDK 8/17/21，Vue 2/3',
-      type: '技术兼容性',
-      keys: ['JDK', 'Vue'],
-      date: new Date()
-    },
-    {
-      title: '后端提供 Spring Boot 2.7/3.2 + Cloud 双架构',
-      type: '架构灵活性',
-      keys: ['Boot', 'Cloud'],
-      date: new Date()
-    },
-    {
-      title: '全部开源，个人与企业可 100% 直接使用，无需授权',
-      type: '开源免授权',
-      keys: ['无需授权'],
-      date: new Date()
-    },
-    {
-      title: '国内使用最广泛的快速开发平台，远超 10w+ 企业使用',
-      type: '广泛企业认可',
-      keys: ['最广泛', '10w+'],
-      date: new Date()
-    }
-  ]
-  notice = Object.assign(notice, data)
+/** 获取公告列表 */
+const fetchNoticeList = async () => {
+  try {
+    const res = await NoticeApi.getNoticePage({
+      pageNo: 1,
+      pageSize: NOTICE_PAGE_SIZE
+    })
+    noticeList.value = res.list ?? []
+  } catch {
+    noticeList.value = []
+  }
 }
 
-// 获取快捷入口
-let shortcut = reactive<Shortcut[]>([])
-
-const getShortcut = async () => {
-  const data = [
-    {
-      name: '首页',
-      icon: 'ion:home-outline',
-      url: '/',
-      color: '#1fdaca'
-    },
-    {
-      name: '商城中心',
-      icon: 'ep:shop',
-      url: '/mall/home',
-      color: '#ff6b6b'
-    },
-    {
-      name: 'AI 大模型',
-      icon: 'tabler:ai',
-      url: '/ai/chat',
-      color: '#7c3aed'
-    },
-    {
-      name: 'ERP 系统',
-      icon: 'simple-icons:erpnext',
-      url: '/erp/home',
-      color: '#3fb27f'
-    },
-    {
-      name: 'CRM 系统',
-      icon: 'simple-icons:civicrm',
-      url: '/crm/backlog',
-      color: '#4daf1bc9'
-    },
-    {
-      name: 'IoT 物联网',
-      icon: 'fa-solid:hdd',
-      url: '/iot/home',
-      color: '#1a73e8'
-    }
-  ]
-  shortcut = Object.assign(shortcut, data)
+/** 初始化流程图（简化：用已办总数分摊到近7天） */
+const initProcessChart = async () => {
+  try {
+    const res = await TaskApi.getTaskDonePage({ pageNo: 1, pageSize: 100 })
+    const list = res.list ?? []
+    const dayCounts = [0, 0, 0, 0, 0, 0, 0]
+    const now = new Date()
+    list.forEach((item: any) => {
+      const ct = item.endTime || item.createTime
+      if (!ct) return
+      const d = new Date(ct)
+      const diff = Math.floor((now.getTime() - d.getTime()) / (24 * 60 * 60 * 1000))
+      if (diff >= 0 && diff < 7) {
+        const idx = 6 - diff
+        if (idx >= 0) dayCounts[idx] = (dayCounts[idx] || 0) + 1
+      }
+    })
+    set(processChartOptions, 'series', [
+      {
+        name: '已办任务',
+        type: 'bar',
+        data: dayCounts,
+        itemStyle: { color: '#67C23A' }
+      }
+    ])
+  } catch {
+    // 保持默认
+  }
 }
 
-// 用户来源
-const getUserAccessSource = async () => {
-  const data = [
-    { value: 335, name: 'analysis.directAccess' },
-    { value: 310, name: 'analysis.mailMarketing' },
-    { value: 234, name: 'analysis.allianceAdvertising' },
-    { value: 135, name: 'analysis.videoAdvertising' },
-    { value: 1548, name: 'analysis.searchEngines' }
-  ]
-  set(
-    pieOptionsData,
-    'legend.data',
-    data.map((v) => t(v.name))
-  )
-  pieOptionsData!.series![0].data = data.map((v) => {
-    return {
-      name: t(v.name),
-      value: v.value
+const getAllData = async () => {
+  loading.value = true
+  try {
+    await Promise.all([
+      fetchCounts(),
+      fetchTodoList(),
+      fetchNoticeList(),
+      initProcessChart()
+    ])
+  } finally {
+    loading.value = false
+  }
+}
+
+const goToTodo = () => {
+  router.push('/bpm/task/todo')
+}
+
+const goToNotice = () => {
+  router.push('/system/notice')
+}
+
+const handleTodoClick = (item: any) => {
+  router.push({
+    name: 'BpmProcessInstanceDetail',
+    query: {
+      id: item.processInstance?.id,
+      taskId: item.id
     }
   })
 }
-const barOptionsData = reactive<EChartsOption>(barOptions) as EChartsOption
 
-// 周活跃量
-const getWeeklyUserActivity = async () => {
-  const data = [
-    { value: 13253, name: 'analysis.monday' },
-    { value: 34235, name: 'analysis.tuesday' },
-    { value: 26321, name: 'analysis.wednesday' },
-    { value: 12340, name: 'analysis.thursday' },
-    { value: 24643, name: 'analysis.friday' },
-    { value: 1322, name: 'analysis.saturday' },
-    { value: 1324, name: 'analysis.sunday' }
-  ]
-  set(
-    barOptionsData,
-    'xAxis.data',
-    data.map((v) => t(v.name))
-  )
-  set(barOptionsData, 'series', [
-    {
-      name: t('analysis.activeQuantity'),
-      data: data.map((v) => v.value),
-      type: 'bar'
-    }
-  ])
+const handleNoticeClick = () => {
+  router.push('/system/notice')
 }
 
-const getAllApi = async () => {
-  await Promise.all([
-    getCount(),
-    getProject(),
-    getNotice(),
-    getShortcut(),
-    getUserAccessSource(),
-    getWeeklyUserActivity()
-  ])
-  loading.value = false
+const handleShortcutClick = (item: { url: string }) => {
+  if (item.url.startsWith('/')) {
+    router.push(item.url)
+  } else {
+    router.push(item.url)
+  }
 }
 
-const handleProjectClick = (message: string) => {
-  window.open(`https://${message}`, '_blank')
-}
-
-const handleShortcutClick = (url: string) => {
-  router.push(url)
-}
-
-getAllApi()
+getAllData()
 </script>
