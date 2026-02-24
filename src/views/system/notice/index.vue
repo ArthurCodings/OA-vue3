@@ -62,6 +62,13 @@
       <el-table-column type="selection" width="55" />
       <el-table-column label="公告编号" align="center" prop="id" />
       <el-table-column label="公告标题" align="center" prop="title" />
+      <el-table-column
+        label="公告内容"
+        align="center"
+        prop="content"
+        min-width="260"
+        :show-overflow-tooltip="true"
+      />
       <el-table-column label="公告类型" align="center" prop="type">
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.SYSTEM_NOTICE_TYPE" :value="scope.row.type" />
@@ -91,6 +98,14 @@
           </el-button>
           <el-button
             link
+            type="primary"
+            @click="handleDetail(scope.row.id)"
+            v-hasPermi="['system:notice:query']"
+          >
+            详情
+          </el-button>
+          <el-button
+            link
             type="danger"
             @click="handleDelete(scope.row.id)"
             v-hasPermi="['system:notice:delete']"
@@ -114,6 +129,27 @@
 
   <!-- 表单弹窗：添加/修改 -->
   <NoticeForm ref="formRef" @success="getList" />
+
+  <!-- 详情弹窗 -->
+  <el-dialog v-model="detailVisible" title="公告详情" width="600px">
+    <el-descriptions v-if="detail" :column="1" border size="small">
+      <el-descriptions-item label="公告标题">
+        {{ detail.title }}
+      </el-descriptions-item>
+      <el-descriptions-item label="公告类型">
+        <dict-tag :type="DICT_TYPE.SYSTEM_NOTICE_TYPE" :value="detail.type" />
+      </el-descriptions-item>
+      <el-descriptions-item label="状态">
+        <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="detail.status" />
+      </el-descriptions-item>
+      <el-descriptions-item label="创建时间">
+        {{ detail.createTime }}
+      </el-descriptions-item>
+      <el-descriptions-item label="公告内容">
+        <div class="mt-2 max-h-400 overflow-auto" v-html="detail.content"></div>
+      </el-descriptions-item>
+    </el-descriptions>
+  </el-dialog>
 </template>
 <script lang="ts" setup>
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
@@ -197,6 +233,17 @@ const handleDeleteBatch = async () => {
     message.success(t('common.delSuccess'))
     // 刷新列表
     await getList()
+  } catch {}
+}
+
+// 详情查看
+const detailVisible = ref(false)
+const detail = ref<NoticeApi.NoticeVO | null>(null)
+const handleDetail = async (id: number) => {
+  try {
+    const data = await NoticeApi.getNotice(id)
+    detail.value = data
+    detailVisible.value = true
   } catch {}
 }
 

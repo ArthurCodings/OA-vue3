@@ -166,7 +166,7 @@
                 v-for="item in noticeList"
                 :key="item.id"
                 class="flex items-start py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded px-2"
-                @click="handleNoticeClick"
+                @click="handleNoticeClick(item)"
               >
                 <div class="flex-1 min-w-0">
                   <div class="text-14px truncate">{{ item.title }}</div>
@@ -198,6 +198,27 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- 公告详情弹窗 -->
+    <el-dialog v-model="noticeDetailVisible" title="公告详情" width="600px">
+      <el-descriptions v-if="noticeDetail" :column="1" border size="small">
+        <el-descriptions-item label="公告标题">
+          {{ noticeDetail.title }}
+        </el-descriptions-item>
+        <el-descriptions-item label="公告类型">
+          <dict-tag :type="DICT_TYPE.SYSTEM_NOTICE_TYPE" :value="noticeDetail.type" />
+        </el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="noticeDetail.status" />
+        </el-descriptions-item>
+        <el-descriptions-item label="创建时间">
+          {{ formatTime(noticeDetail.createTime, 'yyyy-MM-dd HH:mm:ss') }}
+        </el-descriptions-item>
+        <el-descriptions-item label="公告内容">
+          <div class="mt-2 max-h-400 overflow-auto" v-html="noticeDetail.content"></div>
+        </el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
   </div>
 </template>
 <script lang="ts" setup>
@@ -271,7 +292,7 @@ const shortcutList = computed(() => {
     {
       name: '公告管理',
       icon: 'ep:bell',
-      url: '/system/notice',
+      url: '/system/messages/notice',
       color: '#ff6b6b',
       perm: ['system:notice:query']
     }
@@ -390,7 +411,7 @@ const goToTodo = () => {
 }
 
 const goToNotice = () => {
-  router.push('/system/notice')
+  router.push('/system/messages/notice')
 }
 
 const handleTodoClick = (item: any) => {
@@ -403,8 +424,15 @@ const handleTodoClick = (item: any) => {
   })
 }
 
-const handleNoticeClick = () => {
-  router.push('/system/notice')
+const noticeDetailVisible = ref(false)
+const noticeDetail = ref<NoticeApi.NoticeVO | null>(null)
+
+const handleNoticeClick = async (item: NoticeApi.NoticeVO) => {
+  try {
+    const data = await NoticeApi.getNotice(item.id as number)
+    noticeDetail.value = data
+    noticeDetailVisible.value = true
+  } catch {}
 }
 
 const handleShortcutClick = (item: { url: string }) => {
