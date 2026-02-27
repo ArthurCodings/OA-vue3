@@ -5,7 +5,8 @@
   "author": "xingyu",
   "private": false,
   "scripts": {
-    "i": "pnpm install",
+    "i": "npm install",
+    "run": "npm run dev",
     "dev": "vite --mode env.local",
     "dev-server": "vite --mode dev",
     "ts:check": "vue-tsc --noEmit",
