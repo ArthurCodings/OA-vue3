@@ -30,6 +30,27 @@
             </div>
           </el-col>
           <el-col :xl="12" :lg="12" :md="12" :sm="24" :xs="24">
+            <!-- 今日打卡快捷入口 -->
+            <div v-if="clockCardVisible" class="flex items-center gap-2 mb-2">
+              <el-button
+                size="small"
+                :type="todayClockIn ? 'success' : 'primary'"
+                :disabled="todayClockIn"
+                :loading="clockLoading"
+                @click="handleClockIn"
+              >
+                {{ todayClockIn ? '已签到' : '签到' }}
+              </el-button>
+              <el-button
+                size="small"
+                :type="todayClockOut ? 'info' : 'warning'"
+                :disabled="todayClockOut"
+                :loading="clockLoading"
+                @click="handleClockOut"
+              >
+                {{ todayClockOut ? '已签退' : '签退' }}
+              </el-button>
+            </div>
             <div class="h-70px flex items-center justify-end lt-sm:mt-10px">
               <div class="px-8px text-right">
                 <div class="mb-16px text-14px text-gray-400">待办任务</div>
@@ -233,13 +254,16 @@ import * as TaskApi from '@/api/bpm/task'
 import * as ProcessInstanceApi from '@/api/bpm/processInstance'
 import * as NoticeApi from '@/api/system/notice'
 import { useDateTime } from './useDateTime'
+import { useMenuPath } from '@/hooks/web/useMenuPath'
 import { getWuxiWeather } from '@/api/infra/weather'
+import * as PersonalCenterApi from '@/api/system/personalCenter'
 
 defineOptions({ name: 'Index' })
 
 const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
+const { resolveShortcutPath } = useMenuPath()
 const loading = ref(true)
 const avatar = userStore.getUser.avatar
 const username = userStore.getUser.nickname
@@ -266,35 +290,41 @@ const TODO_PAGE_SIZE = 5
 const noticeList = ref<any[]>([])
 const NOTICE_PAGE_SIZE = 5
 
-// 快捷入口（根据权限过滤）
+// 快捷入口（根据权限过滤，路径从后端菜单动态解析避免 404）
 const shortcutList = computed(() => {
   const all: { name: string; icon: string; url: string; color: string; perm?: string[] }[] = [
-    { name: '发起流程', icon: 'ep:plus', url: '/bpm/process-instance/create', color: '#409EFF' },
-    { name: 'OA 请假', icon: 'ep:calendar', url: '/bpm/oa/leave', color: '#67C23A' },
-    { name: '待办任务', icon: 'ep:clock', url: '/bpm/task/todo', color: '#E6A23C' },
-    { name: '已办任务', icon: 'ep:circle-check', url: '/bpm/task/done', color: '#909399' },
-    { name: '抄送我的', icon: 'ep:document-copy', url: '/bpm/process-instance/copy', color: '#909399' },
-    { name: '我的流程', icon: 'ep:list', url: '/bpm/process-instance/my', color: '#409EFF' },
+    { name: '发起流程', icon: 'ep:plus', url: resolveShortcutPath('processInstanceCreate'), color: '#409EFF' },
+    { name: '待办任务', icon: 'ep:clock', url: resolveShortcutPath('taskTodo'), color: '#E6A23C' },
+    { name: '已办任务', icon: 'ep:circle-check', url: resolveShortcutPath('taskDone'), color: '#909399' },
+    { name: '抄送我的', icon: 'ep:document-copy', url: resolveShortcutPath('taskCopy'), color: '#909399' },
+    { name: '我的流程', icon: 'ep:list', url: resolveShortcutPath('processInstanceMy'), color: '#409EFF' },
     {
       name: '用户管理',
       icon: 'ep:user',
-      url: '/system/user',
+      url: resolveShortcutPath('systemUser'),
       color: '#1fdaca',
       perm: ['system:user:query']
     },
     {
       name: '部门管理',
       icon: 'ep:office-building',
-      url: '/system/dept',
+      url: resolveShortcutPath('systemDept'),
       color: '#3fb27f',
       perm: ['system:dept:query']
     },
     {
       name: '公告管理',
       icon: 'ep:bell',
-      url: '/system/messages/notice',
+      url: resolveShortcutPath('systemNotice'),
       color: '#ff6b6b',
       perm: ['system:notice:query']
+    },
+    {
+      name: '签到打卡',
+      icon: 'ep:check',
+      url: 'clock',
+      color: '#67C23A',
+      perm: ['system:attendance-record:clock']
     }
   ]
   return all.filter((item) => {
@@ -407,11 +437,11 @@ const getAllData = async () => {
 }
 
 const goToTodo = () => {
-  router.push('/bpm/task/todo')
+  router.push(resolveShortcutPath('taskTodo'))
 }
 
 const goToNotice = () => {
-  router.push('/system/messages/notice')
+  router.push(resolveShortcutPath('systemNotice'))
 }
 
 const handleTodoClick = (item: any) => {
@@ -435,7 +465,11 @@ const handleNoticeClick = async (item: NoticeApi.NoticeVO) => {
   } catch {}
 }
 
-const handleShortcutClick = (item: { url: string }) => {
+const handleShortcutClick = async (item: { url: string; name?: string }) => {
+  if (item.url === 'clock') {
+    handleClockIn()
+    return
+  }
   if (item.url.startsWith('/')) {
     router.push(item.url)
   } else {
@@ -443,5 +477,49 @@ const handleShortcutClick = (item: { url: string }) => {
   }
 }
 
+// 今日打卡
+const clockCardVisible = ref(false)
+const todayClockIn = ref(false)
+const todayClockOut = ref(false)
+const clockLoading = ref(false)
+
+const fetchClockStatus = async () => {
+  try {
+    const data = await PersonalCenterApi.getPersonalCenterPanel()
+    clockCardVisible.value = !!data
+    todayClockIn.value = data?.todayClockIn ?? false
+    todayClockOut.value = data?.todayClockOut ?? false
+  } catch {
+    clockCardVisible.value = false
+  }
+}
+
+const handleClockIn = async () => {
+  clockLoading.value = true
+  try {
+    await PersonalCenterApi.personalCenterClockIn()
+    useMessage().success('签到成功')
+    await fetchClockStatus()
+  } catch (e: any) {
+    useMessage().error(e?.message || '签到失败')
+  } finally {
+    clockLoading.value = false
+  }
+}
+
+const handleClockOut = async () => {
+  clockLoading.value = true
+  try {
+    await PersonalCenterApi.personalCenterClockOut()
+    useMessage().success('签退成功')
+    await fetchClockStatus()
+  } catch (e: any) {
+    useMessage().error(e?.message || '签退失败')
+  } finally {
+    clockLoading.value = false
+  }
+}
+
 getAllData()
+fetchClockStatus()
 </script>
