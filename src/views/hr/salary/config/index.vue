@@ -33,9 +33,9 @@
         <el-form-item label="启用全勤奖">
           <el-switch v-model="formData.enableFullAttendance" />
         </el-form-item>
-        <el-divider content-position="left">全勤奖金额</el-divider>
-        <el-form-item label="全勤奖金额(元)" prop="fullAttendanceAmount">
+        <el-form-item label="默认全勤奖金额(元)" prop="fullAttendanceAmount">
           <el-input-number v-model="formData.fullAttendanceAmount" :min="0" :precision="2" />
+          <div class="text-12px text-gray-500 mt-1">仅当员工薪资档案中全勤奖填 0 时使用此默认值；每人不同请在员工薪资档案中配置</div>
         </el-form-item>
         <el-divider content-position="left">数据来源</el-divider>
         <el-form-item label="提成来源">

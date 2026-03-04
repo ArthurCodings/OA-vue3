@@ -6,6 +6,8 @@ export interface EmployeeSalaryVO {
   baseSalary: number
   positionSalary: number
   allowance: number
+  /** 个人全勤奖金额（元），0=使用全局配置 */
+  fullAttendanceAmount?: number
   effectiveDate: string
   remark?: string
 }

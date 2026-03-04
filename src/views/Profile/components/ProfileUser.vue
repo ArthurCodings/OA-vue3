@@ -17,7 +17,7 @@
       <li class="list-group-item">
         <Icon class="mr-5px" icon="fontisto:email" />
         {{ t('profile.user.email') }}
-        <div class="pull-right">{{ userInfo?.email }}</div>
+        <div class="pull-right">{{ userInfo?.email || '-' }}</div>
       </li>
       <li class="list-group-item">
         <Icon class="mr-5px" icon="carbon:tree-view-alt" />
@@ -41,7 +41,7 @@
       <li class="list-group-item">
         <Icon class="mr-5px" icon="ep:calendar" />
         {{ t('profile.user.createTime') }}
-        <div class="pull-right">{{ formatDate(userInfo.createTime) }}</div>
+        <div class="pull-right">{{ formatDate(userInfo?.createTime) }}</div>
       </li>
     </ul>
   </div>

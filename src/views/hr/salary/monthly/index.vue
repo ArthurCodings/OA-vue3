@@ -1,11 +1,11 @@
 <template>
   <ContentWrap>
     <el-form
-      class="-mb-15px"
+      class="hr-search-form"
       :model="queryParams"
       ref="queryFormRef"
       :inline="true"
-      label-width="80px"
+      label-width="68px"
     >
       <el-form-item label="年月" prop="yearMonth">
         <el-date-picker
@@ -13,7 +13,7 @@
           type="month"
           value-format="YYYYMM"
           placeholder="选择年月"
-          class="!w-200px"
+          class="!w-180px"
         />
       </el-form-item>
       <el-form-item label="员工" prop="userId">
@@ -22,7 +22,7 @@
           placeholder="请选择员工"
           clearable
           filterable
-          class="!w-200px"
+          class="!w-180px"
         >
           <el-option
             v-for="u in userList"
@@ -33,20 +33,23 @@
         </el-select>
       </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-200px">
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-180px">
           <el-option label="待确认" :value="0" />
           <el-option label="已确认" :value="1" />
           <el-option label="已发放" :value="2" />
         </el-select>
       </el-form-item>
-      <el-form-item>
-        <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
-        <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
+      <el-form-item class="!mb-0">
+        <el-button type="primary" @click="handleQuery">
+          <Icon icon="ep:search" class="mr-5px" /> 搜索
+        </el-button>
+        <el-button @click="resetQuery">
+          <Icon icon="ep:refresh" class="mr-5px" /> 重置
+        </el-button>
         <el-button
           type="primary"
           plain
-          @click="handleGenerate"
-          :loading="generateLoading"
+          @click="openGenerateDialog"
           v-hasPermi="['system:salary-monthly:update']"
         >
           <Icon icon="ep:plus" class="mr-5px" /> 发起结算
@@ -72,7 +75,7 @@
       </el-form-item>
     </el-form>
 
-    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="list" stripe class="hr-data-table" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" :selectable="(row) => row.status !== 2" />
       <el-table-column label="员工" align="center" prop="nickname" width="100" />
       <el-table-column label="年月" align="center" prop="yearMonth" width="90" />
@@ -88,9 +91,10 @@
           <el-tag :type="statusTag(row.status)">{{ statusLabel(row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="180" fixed="right">
+      <el-table-column label="操作" align="center" width="240" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row)">详情</el-button>
+          <el-button link type="primary" @click="openCalcDetail(row)">计算明细</el-button>
           <el-button
             v-if="row.status === 0"
             link
@@ -120,19 +124,69 @@
     />
   </ContentWrap>
 
-  <el-dialog v-model="detailVisible" title="薪资单详情" width="500px">
-    <el-descriptions v-if="detailRow" :column="1" border>
-      <el-descriptions-item label="员工">{{ detailRow.nickname }}</el-descriptions-item>
-      <el-descriptions-item label="年月">{{ detailRow.yearMonth }}</el-descriptions-item>
-      <el-descriptions-item label="基本工资">¥{{ (detailRow.baseSalary ?? 0).toFixed(2) }}</el-descriptions-item>
-      <el-descriptions-item label="岗位工资">¥{{ (detailRow.positionSalary ?? 0).toFixed(2) }}</el-descriptions-item>
-      <el-descriptions-item label="绩效">¥{{ (detailRow.performance ?? 0).toFixed(2) }}</el-descriptions-item>
-      <el-descriptions-item label="提成">¥{{ (detailRow.commission ?? 0).toFixed(2) }}</el-descriptions-item>
-      <el-descriptions-item label="补贴">¥{{ (detailRow.allowance ?? 0).toFixed(2) }}</el-descriptions-item>
-      <el-descriptions-item label="全勤奖">¥{{ (detailRow.fullAttendanceBonus ?? 0).toFixed(2) }}</el-descriptions-item>
-      <el-descriptions-item label="应发合计">¥{{ (detailRow.totalSalary ?? 0).toFixed(2) }}</el-descriptions-item>
-      <el-descriptions-item label="状态">{{ statusLabel(detailRow.status) }}</el-descriptions-item>
-    </el-descriptions>
+  <el-dialog v-model="generateVisible" title="发起月结算" width="400px">
+    <el-form :model="generateForm" label-width="90px">
+      <el-form-item label="选择年月" required>
+        <el-date-picker
+          v-model="generateForm.yearMonth"
+          type="month"
+          value-format="YYYYMM"
+          placeholder="请选择要发起结算的年月"
+          style="width: 100%"
+        />
+      </el-form-item>
+      <el-alert type="info" :closable="false" show-icon class="mt-2">
+        <template #title>说明</template>
+        将根据考勤排班和员工薪资档案，为指定月份生成薪资单草稿。若未选择年月，则生成下月薪资单。
+      </el-alert>
+    </el-form>
+    <template #footer>
+      <el-button @click="generateVisible = false">取 消</el-button>
+      <el-button type="primary" @click="handleGenerate" :loading="generateLoading">确 定</el-button>
+    </template>
+  </el-dialog>
+
+  <el-dialog v-model="detailVisible" title="薪资单详情" width="560px">
+    <el-skeleton v-if="detailLoading" :rows="6" animated />
+    <template v-else-if="detailRow">
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="员工">{{ detailRow.nickname }}</el-descriptions-item>
+        <el-descriptions-item label="年月">{{ detailRow.yearMonth }}</el-descriptions-item>
+        <el-descriptions-item label="基本工资">¥{{ (detailRow.baseSalary ?? 0).toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item label="岗位工资">¥{{ (detailRow.positionSalary ?? 0).toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item label="绩效">¥{{ (detailRow.performance ?? 0).toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item label="提成">¥{{ (detailRow.commission ?? 0).toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item label="补贴">¥{{ (detailRow.allowance ?? 0).toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item label="全勤奖">¥{{ (detailRow.fullAttendanceBonus ?? 0).toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item label="应发合计">¥{{ (detailRow.totalSalary ?? 0).toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{ statusLabel(detailRow.status) }}</el-descriptions-item>
+      </el-descriptions>
+    </template>
+  </el-dialog>
+
+  <el-dialog v-model="calcDetailVisible" title="薪资计算明细" width="800px" destroy-on-close>
+    <div v-if="calcDetailLoading" class="py-8 text-center text-gray-500">加载中...</div>
+    <template v-else-if="calcDetailRow">
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="员工">{{ calcDetailRow.nickname }}</el-descriptions-item>
+        <el-descriptions-item label="月份">{{ formatYearMonth(calcDetailRow.yearMonth) }}</el-descriptions-item>
+      </el-descriptions>
+      <el-table v-if="calcDetailItems.length > 0" :data="calcDetailItems" border stripe class="mt-4">
+        <el-table-column prop="label" label="项目" width="180" />
+        <el-table-column prop="amount" label="金额" width="120" align="right">
+          <template #default="{ row }">
+            <span v-if="isAmountField(row.item)">¥{{ formatCalcAmount(row.amount) }}</span>
+            <span v-else>{{ row.amount }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="description" label="说明" min-width="280">
+          <template #default="{ row }">
+            <span :class="{ 'text-gray-500': !row.description }">{{ row.description || '-' }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-empty v-else description="暂无计算明细数据" :image-size="80" />
+    </template>
   </el-dialog>
 
   <el-dialog v-model="editVisible" title="编辑薪资单" width="400px">
@@ -187,6 +241,81 @@ const statusTag = (v: number) => {
   return map[v] ?? 'info'
 }
 
+const formatYearMonth = (ym: number) => {
+  if (!ym) return ''
+  const s = String(ym)
+  return s.length >= 6 ? `${s.slice(0, 4)}年${parseInt(s.slice(4, 6), 10)}月` : ''
+}
+
+/** 薪资计算明细项 */
+interface SalaryDetailItem {
+  item: string
+  label: string
+  amount: number | string
+  description: string
+}
+
+/** 解析薪资计算明细 JSON，兼容新格式 { items: [...] } 与旧格式扁平对象 */
+const parseSalaryDetail = (jsonStr: string | null | undefined): SalaryDetailItem[] => {
+  if (!jsonStr || typeof jsonStr !== 'string') return []
+  try {
+    const data = JSON.parse(jsonStr)
+    // 新格式：{ items: [{ item, label, amount, description }, ...] }
+    if (data.items && Array.isArray(data.items)) {
+      return data.items
+    }
+    // 旧格式：{ totalDays: 31, baseSalary: 1200, ... }
+    const labelMap: Record<string, string> = {
+      totalDays: '当月总天数',
+      sundayDays: '周日天数',
+      holidayDays: '法定节假日休息天数',
+      workingDays: '计薪工作日',
+      baseSalary: '基本工资',
+      dailySalary: '日薪',
+      positionSalary: '岗位工资',
+      performance: '绩效',
+      commission: '提成',
+      allowance: '补贴',
+      fullAttendanceBonus: '全勤奖',
+      shouldAttendDays: '应出勤天数',
+      actualAttendDays: '实际出勤天数',
+      lateCount: '迟到次数',
+      lateDeduction: '迟到扣款',
+      sickLeaveDays: '病假天数',
+      sickLeaveDeduction: '病假扣款',
+      casualLeaveDays: '事假天数',
+      casualLeaveDeduction: '事假扣款',
+      absentCount: '缺勤天数',
+      absentDeduction: '缺勤扣款',
+      attendanceDeduction: '考勤扣款合计',
+      totalSalary: '应发合计'
+    }
+    return Object.entries(data).map(([key, value]) => ({
+      item: key,
+      label: labelMap[key] || key,
+      amount: value as number | string,
+      description: ''
+    }))
+  } catch {
+    return []
+  }
+}
+
+/** 需要显示为金额的字段 */
+const amountFields = [
+  'baseSalary', 'positionSalary', 'performance', 'commission', 'allowance',
+  'fullAttendanceBonus', 'dailySalary', 'lateDeduction', 'sickLeaveDeduction',
+  'casualLeaveDeduction', 'absentDeduction', 'attendanceDeduction', 'totalSalary'
+]
+
+const isAmountField = (item: string) => amountFields.includes(item)
+
+const formatCalcAmount = (val: unknown) => {
+  if (val == null) return '0.00'
+  const num = Number(val)
+  return isNaN(num) ? String(val) : num.toFixed(2)
+}
+
 const getList = async () => {
   loading.value = true
   try {
@@ -210,12 +339,23 @@ const resetQuery = () => {
   handleQuery()
 }
 
+const generateVisible = ref(false)
+const generateForm = ref<{ yearMonth?: string }>({ yearMonth: undefined })
+
+const openGenerateDialog = () => {
+  const now = new Date()
+  const defaultMonth = now.getFullYear().toString() + (now.getMonth() + 1).toString().padStart(2, '0')
+  generateForm.value = { yearMonth: defaultMonth }
+  generateVisible.value = true
+}
+
 const handleGenerate = async () => {
-  const yearMonth = queryParams.yearMonth ? Number(queryParams.yearMonth) : undefined
+  const yearMonth = generateForm.value.yearMonth ? Number(generateForm.value.yearMonth) : undefined
   generateLoading.value = true
   try {
     await SalaryMonthlyApi.generateSalaryMonthly(yearMonth)
     message.success('月结算发起成功')
+    generateVisible.value = false
     await getList()
   } finally {
     generateLoading.value = false
@@ -260,10 +400,44 @@ const handleExport = async () => {
 
 const detailVisible = ref(false)
 const detailRow = ref<any>(null)
+const detailLoading = ref(false)
 
-const openDetail = (row: any) => {
-  detailRow.value = row
+const openDetail = async (row: any) => {
   detailVisible.value = true
+  detailLoading.value = true
+  detailRow.value = null
+  try {
+    const data = await SalaryMonthlyApi.getSalaryMonthlyDetail(row.id)
+    detailRow.value = data ?? row
+  } catch {
+    detailRow.value = row
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+const calcDetailVisible = ref(false)
+const calcDetailRow = ref<any>(null)
+const calcDetailLoading = ref(false)
+
+const calcDetailItems = computed(() => {
+  const row = calcDetailRow.value
+  if (!row?.salaryDetail) return []
+  return parseSalaryDetail(row.salaryDetail)
+})
+
+const openCalcDetail = async (row: any) => {
+  calcDetailVisible.value = true
+  calcDetailLoading.value = true
+  calcDetailRow.value = null
+  try {
+    const data = await SalaryMonthlyApi.getSalaryMonthlyDetail(row.id)
+    calcDetailRow.value = data ?? row
+  } catch {
+    calcDetailRow.value = row
+  } finally {
+    calcDetailLoading.value = false
+  }
 }
 
 const editVisible = ref(false)
@@ -301,3 +475,8 @@ onMounted(async () => {
   getList()
 })
 </script>
+<style scoped>
+.hr-search-form { margin-bottom: 16px; }
+.hr-search-form :deep(.el-form-item) { margin-bottom: 12px; margin-right: 16px; }
+.hr-data-table { border-radius: 6px; overflow: hidden; }
+</style>

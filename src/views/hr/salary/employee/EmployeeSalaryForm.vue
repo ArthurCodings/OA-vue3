@@ -32,6 +32,10 @@
       <el-form-item label="补贴(元)" prop="allowance">
         <el-input-number v-model="formData.allowance" :min="0" :precision="2" style="width: 100%" />
       </el-form-item>
+      <el-form-item label="全勤奖金额(元)" prop="fullAttendanceAmount">
+        <el-input-number v-model="formData.fullAttendanceAmount" :min="0" :precision="2" style="width: 100%" placeholder="0 表示使用全局默认" />
+        <div class="text-12px text-gray-500 mt-1">填 0 时使用薪资配置中的默认全勤奖金额</div>
+      </el-form-item>
       <el-form-item label="生效日期" prop="effectiveDate">
         <el-date-picker
           v-model="formData.effectiveDate"
@@ -72,6 +76,7 @@ const formData = ref<EmployeeSalaryVO>({
   baseSalary: 0,
   positionSalary: 0,
   allowance: 0,
+  fullAttendanceAmount: 0,
   effectiveDate: '',
   remark: ''
 })
@@ -94,7 +99,8 @@ const open = async (type: string, id?: number, row?: any) => {
       baseSalary: row.baseSalary ?? 0,
       positionSalary: row.positionSalary ?? 0,
       allowance: row.allowance ?? 0,
-      effectiveDate: row.effectiveDate,
+      fullAttendanceAmount: row.fullAttendanceAmount ?? row.full_attendance_amount ?? 0,
+      effectiveDate: row.effectiveDate ?? row.effective_date,
       remark: row.remark
     }
   }
@@ -106,6 +112,7 @@ const resetForm = () => {
     baseSalary: 0,
     positionSalary: 0,
     allowance: 0,
+    fullAttendanceAmount: 0,
     effectiveDate: '',
     remark: ''
   }

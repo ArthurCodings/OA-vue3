@@ -65,7 +65,22 @@ export const getMyLatestSalary = () => {
   return request.get({ url: '/system/salary/my-latest' })
 }
 
-// 个人中心-历史薪资列表
+// 个人中心-历史薪资列表（后端不分页，前端分页展示）
 export const getMySalaryList = () => {
   return request.get({ url: '/system/salary/my-list' })
+}
+
+// 查看薪资计算明细（含 salaryDetail 用于前端明细弹窗）
+export const getSalaryMonthlyDetail = (id: number) => {
+  return request.get({ url: '/system/salary/monthly/detail', params: { id } })
+}
+
+// 个人中心-待确认薪资通知单列表
+export const getMyConfirmNotices = () => {
+  return request.get({ url: '/system/salary/my-confirm-notices' })
+}
+
+// 个人中心-员工确认单条薪资通知单
+export const myConfirmSalary = (noticeId: number) => {
+  return request.put({ url: '/system/salary/my-confirm', params: { noticeId } })
 }

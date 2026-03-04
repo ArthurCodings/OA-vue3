@@ -77,7 +77,7 @@ export function createVitePlugins() {
     }),
     createSvgIconsPlugin({
       iconDirs: [pathResolve('src/assets/svgs')],
-      symbolId: 'icon-[dir]-[name]',
+      symbolId: 'icon-[dir]-[name]'
     }),
     viteCompression({
       verbose: true, // 是否在控制台输出压缩结果
@@ -92,7 +92,7 @@ export function createVitePlugins() {
       // https://juejin.cn/post/7152191742513512485
       // The export name of top-level await promise for each chunk module
       promiseExportName: '__tla',
-      // The function to generate import names of top-level await promise in each chunk module
+      // The function to generate import names of top-level await promise
       promiseImportName: (i) => `__tla_${i}`
     })
   ]

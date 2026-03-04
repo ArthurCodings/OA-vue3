@@ -20,7 +20,7 @@
               <el-option
                 v-for="u in userList"
                 :key="u.id"
-                :label="`${u.nickname} (${u.username})`"
+                :label="getUserLabel(u)"
                 :value="u.id"
               />
             </el-select>
@@ -226,6 +226,13 @@ const formRules = reactive({
   nickname: [{ required: true, message: '请输入姓名', trigger: 'blur' }]
 })
 const formRef = ref()
+
+/** 关联用户展示：有 username 时显示「姓名 (username)」，否则仅显示姓名，避免 undefined */
+const getUserLabel = (u: any) => {
+  const name = u?.nickname ?? '-'
+  const username = u?.username ?? u?.user_name
+  return username ? `${name} (${username})` : name
+}
 
 const open = async (type: string, id?: number) => {
   dialogVisible.value = true

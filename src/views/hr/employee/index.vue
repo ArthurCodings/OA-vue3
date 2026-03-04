@@ -1,75 +1,83 @@
 <template>
   <ContentWrap>
-    <el-form
-      class="-mb-15px"
-      :model="queryParams"
-      ref="queryFormRef"
-      :inline="true"
-      label-width="80px"
-    >
-      <el-form-item label="姓名" prop="nickname">
-        <el-input
-          v-model="queryParams.nickname"
-          placeholder="请输入姓名"
-          clearable
-          @keyup.enter="handleQuery"
-          class="!w-200px"
-        />
-      </el-form-item>
-      <el-form-item label="部门" prop="deptId">
-        <el-tree-select
-          v-model="queryParams.deptId"
-          :data="deptTree"
-          :props="{ label: 'name', value: 'id' }"
-          check-strictly
-          node-key="id"
-          placeholder="请选择部门"
-          clearable
-          class="!w-200px"
-        />
-      </el-form-item>
-      <el-form-item label="雇佣类型" prop="employmentType">
-        <el-select v-model="queryParams.employmentType" placeholder="请选择" clearable class="!w-200px">
-          <el-option label="全职" :value="1" />
-          <el-option label="实习" :value="2" />
-          <el-option label="兼职" :value="3" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="在职状态" prop="employmentStatus">
-        <el-select v-model="queryParams.employmentStatus" placeholder="请选择" clearable class="!w-200px">
-          <el-option label="在职" :value="1" />
-          <el-option label="离职" :value="2" />
-          <el-option label="待入职" :value="3" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
-        <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
-        <el-button
-          type="primary"
-          plain
-          @click="openForm('create')"
-          v-hasPermi="['system:hr-employee:update']"
-        >
-          <Icon icon="ep:plus" class="mr-5px" /> 新增
-        </el-button>
-        <el-button
-          type="success"
-          plain
-          @click="handleExport"
-          :loading="exportLoading"
-          v-hasPermi="['system:hr-employee:export']"
-        >
-          <Icon icon="ep:download" class="mr-5px" /> 导出
-        </el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryFormRef" label-width="80px" class="-mb-15px">
+      <el-row :gutter="16">
+        <el-col :xs="24" :sm="12" :md="6" :lg="6">
+          <el-form-item label="姓名" prop="nickname">
+            <el-input
+              v-model="queryParams.nickname"
+              placeholder="请输入姓名"
+              clearable
+              @keyup.enter="handleQuery"
+              class="!w-full"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="6" :lg="6">
+          <el-form-item label="部门" prop="deptId">
+            <el-tree-select
+              v-model="queryParams.deptId"
+              :data="deptTree"
+              :props="{ label: 'name', value: 'id' }"
+              check-strictly
+              node-key="id"
+              placeholder="请选择部门"
+              clearable
+              class="!w-full"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="6" :lg="6">
+          <el-form-item label="雇佣类型" prop="employmentType">
+            <el-select v-model="queryParams.employmentType" placeholder="请选择" clearable class="!w-full">
+              <el-option label="全职" :value="1" />
+              <el-option label="实习" :value="2" />
+              <el-option label="兼职" :value="3" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="6" :lg="6">
+          <el-form-item label="在职状态" prop="employmentStatus">
+            <el-select v-model="queryParams.employmentStatus" placeholder="请选择" clearable class="!w-full">
+              <el-option label="在职" :value="1" />
+              <el-option label="离职" :value="2" />
+              <el-option label="待入职" :value="3" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row>
+        <el-col :span="24">
+          <div class="flex justify-end gap-2">
+            <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
+            <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
+            <el-button
+              type="primary"
+              plain
+              @click="openForm('create')"
+              v-hasPermi="['system:hr-employee:update']"
+            >
+              <Icon icon="ep:plus" class="mr-5px" /> 新增
+            </el-button>
+            <el-button
+              type="success"
+              plain
+              @click="handleExport"
+              :loading="exportLoading"
+              v-hasPermi="['system:hr-employee:export']"
+            >
+              <Icon icon="ep:download" class="mr-5px" /> 导出
+            </el-button>
+          </div>
+        </el-col>
+      </el-row>
     </el-form>
 
-    <el-table v-loading="loading" :data="list">
-      <el-table-column label="姓名" align="center" prop="nickname" width="100" />
-      <el-table-column label="部门" align="center" prop="deptName" width="120" />
-      <el-table-column label="岗位" align="center" prop="postName" width="100" />
-      <el-table-column label="手机号" align="center" prop="mobile" width="120" />
+    <el-table v-loading="loading" :data="list" stripe class="mt-4">
+      <el-table-column label="姓名" align="center" prop="nickname" min-width="90" />
+      <el-table-column label="部门" align="center" prop="deptName" min-width="100" />
+      <el-table-column label="岗位" align="center" prop="postName" min-width="100" />
+      <el-table-column label="手机号" align="center" prop="mobile" min-width="115" />
       <el-table-column label="雇佣类型" align="center" prop="employmentType" width="90">
         <template #default="{ row }">
           <el-tag size="small">{{ employmentTypeLabel(row.employmentType) }}</el-tag>
@@ -82,9 +90,13 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="入职日期" align="center" prop="joinDate" width="110" />
-      <el-table-column label="离职日期" align="center" prop="leaveDate" width="110" />
-      <el-table-column label="操作" align="center" width="180" fixed="right">
+      <el-table-column label="入职日期" align="center" prop="joinDate" width="110">
+        <template #default="{ row }">{{ row.joinDate || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="离职日期" align="center" prop="leaveDate" width="110">
+        <template #default="{ row }">{{ row.leaveDate || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" width="150" fixed="right">
         <template #default="{ row }">
           <el-button
             link
@@ -157,11 +169,31 @@ const employmentStatusTag = (v: number) => {
   return map[v] ?? 'info'
 }
 
+/** 日期格式统一为 yyyy-MM-dd 显示 */
+const normalizeDate = (v: any): string => {
+  if (!v) return ''
+  const s = String(v).trim()
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10)
+  return s
+}
+
+/** 标准化列表项（兼容 snake_case 与 camelCase） */
+const normalizeListItem = (row: any) => {
+  return {
+    ...row,
+    deptName: (row.deptName ?? row.dept_name) || '-',
+    postName: (row.postName ?? row.post_name) || '-',
+    joinDate: normalizeDate(row.joinDate ?? row.join_date),
+    leaveDate: normalizeDate(row.leaveDate ?? row.leave_date)
+  }
+}
+
 const getList = async () => {
   loading.value = true
   try {
     const data = await HrEmployeeApi.getHrEmployeePage(queryParams)
-    list.value = data.list ?? []
+    const rawList = data.list ?? []
+    list.value = rawList.map(normalizeListItem)
     total.value = data.total ?? 0
   } finally {
     loading.value = false

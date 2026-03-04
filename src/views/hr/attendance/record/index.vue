@@ -54,12 +54,12 @@
       <el-table-column label="考勤日期" align="center" prop="attendanceDate" width="120" />
       <el-table-column label="签到时间" align="center" prop="clockInTime" width="160">
         <template #default="{ row }">
-          {{ row.clockInTime ? formatTime(row.clockInTime, 'yyyy-MM-dd HH:mm:ss') : '-' }}
+          {{ row.clockInTime ? formatDate(row.clockInTime, 'YYYY-MM-DD HH:mm:ss') : '-' }}
         </template>
       </el-table-column>
       <el-table-column label="签退时间" align="center" prop="clockOutTime" width="160">
         <template #default="{ row }">
-          {{ row.clockOutTime ? formatTime(row.clockOutTime, 'yyyy-MM-dd HH:mm:ss') : '-' }}
+          {{ row.clockOutTime ? formatDate(row.clockOutTime, 'YYYY-MM-DD HH:mm:ss') : '-' }}
         </template>
       </el-table-column>
       <el-table-column label="考勤状态" align="center" prop="status" width="90">
@@ -78,7 +78,7 @@
   </ContentWrap>
 </template>
 <script lang="ts" setup>
-import { formatTime } from '@/utils/formatTime'
+import { formatDate } from '@/utils/formatTime'
 import * as RecordApi from '@/api/hr/attendance/record'
 import * as UserApi from '@/api/system/user'
 

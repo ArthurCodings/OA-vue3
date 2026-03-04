@@ -5,6 +5,16 @@ import { cloneDeep, omit } from 'lodash-es'
 import qs from 'qs'
 
 const modules = import.meta.glob('../views/**/*.{vue,tsx}')
+
+/** 解析组件路径：兼容菜单误配 orehr -> hr 等 */
+function resolveComponentPath(component: string | undefined): string | undefined {
+  if (!component) return component
+  // 菜单误配 orehr 时映射为 hr（实际组件在 views/hr/ 下）
+  if (component.startsWith('orehr/')) {
+    return 'hr/' + component.slice(6)
+  }
+  return component
+}
 /**
  * 注册一个异步组件
  * @param componentPath 例:/bpm/oa/leave/detail
@@ -115,8 +125,9 @@ export const generateRoute = (routes: AppCustomRouteRecordRaw[]): AppRouteRecord
         redirect: route.redirect,
         meta: meta
       }
-      const index = route?.component
-        ? modulesRoutesKeys.findIndex((ev) => ev.includes(route.component))
+      const compPath = resolveComponentPath(route?.component)
+      const index = compPath
+        ? modulesRoutesKeys.findIndex((ev) => ev.includes(compPath))
         : modulesRoutesKeys.findIndex((ev) => ev.includes(route.path))
       childrenData.component = modules[modulesRoutesKeys[index]]
       data.children = [childrenData]
@@ -138,8 +149,9 @@ export const generateRoute = (routes: AppCustomRouteRecordRaw[]): AppRouteRecord
         // 菜单
       } else {
         // 对后端传component组件路径和不传做兼容（如果后端传component组件路径，那么path可以随便写，如果不传，component组件路径会根path保持一致）
-        const index = route?.component
-          ? modulesRoutesKeys.findIndex((ev) => ev.includes(route.component))
+        const compPath = resolveComponentPath(route?.component)
+        const index = compPath
+          ? modulesRoutesKeys.findIndex((ev) => ev.includes(compPath))
           : modulesRoutesKeys.findIndex((ev) => ev.includes(route.path))
         data.component = modules[modulesRoutesKeys[index]]
       }

@@ -97,6 +97,33 @@ const formRules = reactive({
 })
 const formRef = ref()
 
+/** 时间格式统一为 HH:mm:ss（el-time-picker 需要） */
+const normalizeTime = (v: any, def: string): string => {
+  if (!v) return def
+  const s = String(v).trim()
+  if (s.length >= 8 && /^\d{1,2}:\d{2}:\d{2}/.test(s)) return s.slice(0, 8)
+  if (s.length >= 5 && /^\d{1,2}:\d{2}$/.test(s)) return s + ':00'
+  return def
+}
+
+/** 标准化接口数据（兼容 snake_case 与 camelCase） */
+const normalizeRuleData = (raw: any) => {
+  const d = raw ?? {}
+  return {
+    id: d.id,
+    name: d.name ?? '',
+    shiftType: d.shiftType ?? d.shift_type ?? 2,
+    workDaysPerWeek: d.workDaysPerWeek ?? d.work_days_per_week ?? 5,
+    workStartTime: normalizeTime(d.workStartTime ?? d.work_start_time, '09:00:00'),
+    workEndTime: normalizeTime(d.workEndTime ?? d.work_end_time, '18:00:00'),
+    lateThresholdMinutes: d.lateThresholdMinutes ?? d.late_threshold_minutes ?? 15,
+    earlyLeaveThresholdMinutes: d.earlyLeaveThresholdMinutes ?? d.early_leave_threshold_minutes ?? 15,
+    isFollowHoliday: (d.isFollowHoliday ?? d.is_follow_holiday) !== false && (d.isFollowHoliday ?? d.is_follow_holiday) !== 0,
+    status: d.status ?? 0,
+    remark: d.remark ?? ''
+  }
+}
+
 const open = async (type: string, id?: number) => {
   dialogVisible.value = true
   dialogTitle.value = type === 'create' ? '新增排班规则' : '修改排班规则'
@@ -105,13 +132,12 @@ const open = async (type: string, id?: number) => {
   if (id) {
     formLoading.value = true
     try {
-      const data = await AttendanceRuleApi.getAttendanceRule(id)
-      formData.value = {
-        ...data,
-        workStartTime: data.workStartTime || '09:00:00',
-        workEndTime: data.workEndTime || '18:00:00',
-        isFollowHoliday: data.isFollowHoliday !== false
-      }
+      const res = await AttendanceRuleApi.getAttendanceRule(id)
+      const data = (res as any)?.data ?? res
+      formData.value = normalizeRuleData(data)
+    } catch (e) {
+      message.error('获取排班规则详情失败')
+      console.error(e)
     } finally {
       formLoading.value = false
     }

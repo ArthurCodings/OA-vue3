@@ -48,6 +48,11 @@
       <el-table-column label="补贴" align="center" prop="allowance" width="100">
         <template #default="{ row }">¥{{ (row.allowance ?? 0).toFixed(2) }}</template>
       </el-table-column>
+      <el-table-column label="全勤奖" align="center" prop="fullAttendanceAmount" width="90">
+        <template #default="{ row }">
+          {{ (row.fullAttendanceAmount ?? row.full_attendance_amount ?? 0) === 0 ? '默认' : '¥' + (row.fullAttendanceAmount ?? row.full_attendance_amount ?? 0).toFixed(2) }}
+        </template>
+      </el-table-column>
       <el-table-column label="生效日期" align="center" prop="effectiveDate" width="120" />
       <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
       <el-table-column label="操作" align="center" width="150" fixed="right">
@@ -76,6 +81,7 @@
 <script lang="ts" setup>
 import * as EmployeeSalaryApi from '@/api/hr/salary/employee'
 import * as UserApi from '@/api/system/user'
+import EmployeeSalaryForm from './EmployeeSalaryForm.vue'
 
 defineOptions({ name: 'HrEmployeeSalary' })
 

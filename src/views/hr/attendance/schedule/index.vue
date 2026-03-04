@@ -1,84 +1,97 @@
 <template>
   <ContentWrap>
-    <el-form
-      class="-mb-15px"
-      :model="queryParams"
-      ref="queryFormRef"
-      :inline="true"
-      label-width="80px"
-    >
-      <el-form-item label="年月" prop="yearMonth">
-        <el-date-picker
-          v-model="queryParams.yearMonth"
-          type="month"
-          value-format="YYYYMM"
-          placeholder="选择年月"
-          class="!w-200px"
-        />
-      </el-form-item>
-      <el-form-item label="员工" prop="userId">
-        <el-select
-          v-model="queryParams.userId"
-          placeholder="请选择员工"
-          clearable
-          filterable
-          class="!w-200px"
-        >
-          <el-option
-            v-for="u in userList"
-            :key="u.id"
-            :label="u.nickname"
-            :value="u.id"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="班次" prop="shiftType">
-        <el-select v-model="queryParams.shiftType" placeholder="请选择班次" clearable class="!w-200px">
-          <el-option label="早班" :value="1" />
-          <el-option label="晚班" :value="2" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
-        <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
-        <el-button
-          type="primary"
-          plain
-          @click="handleGenerate"
-          :loading="generateLoading"
-          v-hasPermi="['system:attendance-schedule:update']"
-        >
-          <Icon icon="ep:plus" class="mr-5px" /> 生成排班
-        </el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryFormRef" label-width="80px" class="-mb-15px">
+      <el-row :gutter="16">
+        <el-col :xs="24" :sm="12" :md="6" :lg="6">
+          <el-form-item label="年月" prop="yearMonth">
+            <el-date-picker
+              v-model="queryParams.yearMonth"
+              type="month"
+              value-format="YYYYMM"
+              placeholder="选择年月"
+              class="!w-full"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="6" :lg="6">
+          <el-form-item label="员工" prop="userId">
+            <el-select
+              v-model="queryParams.userId"
+              placeholder="请选择员工"
+              clearable
+              filterable
+              class="!w-full"
+            >
+              <el-option
+                v-for="u in userList"
+                :key="u.id"
+                :label="u.nickname"
+                :value="u.id"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="6" :lg="6">
+          <el-form-item label="班次" prop="shiftType">
+            <el-select v-model="queryParams.shiftType" placeholder="请选择班次" clearable class="!w-full">
+              <el-option label="早班" :value="1" />
+              <el-option label="晚班" :value="2" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row>
+        <el-col :span="24">
+          <div class="flex justify-end gap-2">
+            <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
+            <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
+            <el-button
+              type="primary"
+              @click="openGenerateDialog"
+              v-hasPermi="['system:attendance-schedule:update']"
+            >
+              <Icon icon="ep:plus" class="mr-5px" /> 生成排班
+            </el-button>
+          </div>
+        </el-col>
+      </el-row>
     </el-form>
 
-    <el-table v-loading="loading" :data="list">
-      <el-table-column label="员工" align="center" prop="nickname" width="100" fixed="left" />
-      <el-table-column label="部门" align="center" prop="deptName" width="100" fixed="left" />
-      <el-table-column label="排班日期" align="center" prop="scheduleDate" width="110" />
-      <el-table-column label="班次" align="center" prop="shiftType" width="80">
+    <el-table v-loading="loading" :data="list" stripe class="mt-4">
+      <el-table-column label="员工" align="center" prop="nickname" min-width="90" fixed="left">
+        <template #default="{ row }">{{ row.nickname || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="部门" align="center" prop="deptName" min-width="100" fixed="left">
+        <template #default="{ row }">{{ row.deptName || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="岗位" align="center" prop="postName" min-width="100">
+        <template #default="{ row }">{{ row.postName || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="排班日期" align="center" prop="scheduleDate" width="110">
+        <template #default="{ row }">{{ row.scheduleDate || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="班次" align="center" prop="shiftType" width="90">
         <template #default="{ row }">
           <el-tag :type="row.shiftType === 1 ? 'success' : 'warning'" size="small">
             {{ row.shiftType === 1 ? '早班' : '晚班' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="日类型" align="center" prop="dayType" width="100">
+      <el-table-column label="日类型" align="center" prop="dayType" width="110">
         <template #default="{ row }">
           <el-tag :type="dayTypeTag(row.dayType)" size="small">
             {{ dayTypeLabel(row.dayType) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="需打卡" align="center" prop="isNeedClock" width="80">
+      <el-table-column label="需打卡" align="center" prop="isNeedClock" width="90">
         <template #default="{ row }">
           <el-tag :type="row.isNeedClock ? 'success' : 'info'" size="small">
             {{ row.isNeedClock ? '是' : '否' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="120" fixed="right">
+      <el-table-column label="操作" align="center" width="100" fixed="right">
         <template #default="{ row }">
           <el-button
             v-if="row.isNeedClock"
@@ -100,6 +113,28 @@
       @pagination="getList"
     />
   </ContentWrap>
+
+  <el-dialog v-model="generateVisible" title="生成排班" width="400px">
+    <el-form :model="generateForm" label-width="90px">
+      <el-form-item label="选择年月" required>
+        <el-date-picker
+          v-model="generateForm.yearMonth"
+          type="month"
+          value-format="YYYYMM"
+          placeholder="请选择要生成排班的年月"
+          style="width: 100%"
+        />
+      </el-form-item>
+      <el-alert type="info" :closable="false" show-icon class="mt-2">
+        <template #title>说明</template>
+        将根据排班规则为花名册中的员工生成指定月份的考勤排班。若未选择年月，则生成下月排班。
+      </el-alert>
+    </el-form>
+    <template #footer>
+      <el-button @click="generateVisible = false">取 消</el-button>
+      <el-button type="primary" @click="handleGenerate" :loading="generateLoading">确 定</el-button>
+    </template>
+  </el-dialog>
 
   <el-dialog v-model="changeShiftVisible" title="临时调班" width="400px">
     <el-form :model="changeShiftForm" label-width="80px">
@@ -136,12 +171,14 @@ const userList = ref<any[]>([])
 const ruleList = ref<any[]>([])
 const queryParams = reactive({
   pageNo: 1,
-  pageSize: 10,
+  pageSize: 20,
   yearMonth: undefined,
   userId: undefined,
   shiftType: undefined
 })
 const queryFormRef = ref()
+
+/** 后端返回结构：id, userId, nickname, deptName, postName, ruleId, shiftType, scheduleDate, yearMonth, dayType, isNeedClock, createTime */
 
 const dayTypeLabel = (v: number) => {
   const map: Record<number, string> = {
@@ -166,7 +203,11 @@ const dayTypeTag = (v: number) => {
 const getList = async () => {
   loading.value = true
   try {
-    const data = await ScheduleApi.getAttendanceSchedulePage(queryParams)
+    const params = {
+      ...queryParams,
+      yearMonth: queryParams.yearMonth ? Number(queryParams.yearMonth) : undefined
+    }
+    const data = await ScheduleApi.getAttendanceSchedulePage(params)
     list.value = data.list ?? []
     total.value = data.total ?? 0
   } finally {
@@ -184,12 +225,23 @@ const resetQuery = () => {
   handleQuery()
 }
 
+const generateVisible = ref(false)
+const generateForm = ref<{ yearMonth?: string }>({ yearMonth: undefined })
+
+const openGenerateDialog = () => {
+  const now = new Date()
+  const defaultMonth = now.getFullYear().toString() + (now.getMonth() + 1).toString().padStart(2, '0')
+  generateForm.value = { yearMonth: defaultMonth }
+  generateVisible.value = true
+}
+
 const handleGenerate = async () => {
-  const yearMonth = queryParams.yearMonth || undefined
+  const yearMonth = generateForm.value.yearMonth ? Number(generateForm.value.yearMonth) : undefined
   generateLoading.value = true
   try {
     await ScheduleApi.generateAttendanceSchedule(yearMonth)
     message.success('排班生成成功')
+    generateVisible.value = false
     await getList()
   } finally {
     generateLoading.value = false
@@ -215,7 +267,9 @@ const submitChangeShift = async () => {
 
 onMounted(async () => {
   const now = new Date()
-  queryParams.yearMonth = Number(now.getFullYear().toString() + (now.getMonth() + 1).toString().padStart(2, '0'))
+  queryParams.yearMonth = Number(
+    now.getFullYear().toString() + (now.getMonth() + 1).toString().padStart(2, '0')
+  )
   try {
     const [users, rules] = await Promise.all([
       UserApi.getSimpleUserList(),

@@ -11,7 +11,7 @@
     </el-card>
     <el-card class="user ml-3 w-2/3" shadow="hover">
       <div>
-        <el-tabs v-model="activeName" class="profile-tabs" style="height: 400px" tab-position="top">
+        <el-tabs v-model="activeName" class="profile-tabs" tab-position="top">
           <el-tab-pane :label="t('profile.info.basicInfo')" name="basicInfo">
             <BasicInfo @success="handleBasicInfoSuccess" />
           </el-tab-pane>
@@ -58,13 +58,16 @@ const handleBasicInfoSuccess = async () => {
   padding: 15px !important;
 }
 
-.profile-tabs > .el-tabs__content {
+:deep(.profile-tabs .el-tabs__content) {
   padding: 32px;
   font-weight: 600;
   color: #6b778c;
+  overflow-y: auto !important;
+  max-height: calc(100vh - 220px);
+  min-height: 400px;
 }
 
-.el-tabs--left .el-tabs__content {
-  height: 100%;
+:deep(.profile-tabs .el-tab-pane) {
+  overflow: visible !important;
 }
 </style>

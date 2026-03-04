@@ -1,14 +1,19 @@
 import request from '@/config/axios'
 
+/** 后端返回结构 */
 export interface AttendanceScheduleVO {
   id?: number
   userId: number
+  nickname: string
+  deptName: string
+  postName: string
   ruleId: number
   shiftType: number
   scheduleDate: string
   yearMonth: number
   dayType: number
   isNeedClock: boolean
+  createTime?: string
 }
 
 // 排班分页列表
